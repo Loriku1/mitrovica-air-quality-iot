@@ -8,11 +8,12 @@
     "doc": "docs"
   },
   "scripts": {
-  "dev:ingestion": "tsx watch services/ingestion-service/src/index.ts",
-  "dev:storage": "tsx watch services/storage-service/src/index.ts",
-  "dev:alert": "tsx watch services/alert-service/src/index.ts",
-  "typecheck": "tsc --noEmit"
-},
+    "dev:ingestion": "tsx watch services/ingestion-service/src/index.ts",
+    "dev:storage": "tsx watch services/storage-service/src/index.ts",
+    "dev:alert": "tsx watch services/alert-service/src/index.ts",
+    "dev:all": "concurrently \"npm:dev:ingestion\" \"npm:dev:storage\" \"npm:dev:alert\"",
+    "typecheck": "tsc --noEmit"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Loriku1/mitrovica-air-quality-iot.git"
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.6",
+    "concurrently": "^10.0.7",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   }
