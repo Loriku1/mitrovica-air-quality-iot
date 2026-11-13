@@ -1,0 +1,123 @@
+﻿openapi: 3.1.0
+
+info:
+  title: Ingestion Service API
+  version: 1.0.0
+  description: >
+    API for receiving air quality measurements from IoT sensors.
+    A measurement is accepted only after it has been durably recorded
+    together with its transactional outbox event.
+
+servers:
+  - url: http://localhost:3101
+    description: Local development server
+
+tags:
+  - name: Health
+  - name: Measurements
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Check service health
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /v1/measurements:
+    post:
+      tags:
+        - Measurements
+      summary: Submit an air quality measurement
+      description: >
+        Accepts a measurement from an IoT sensor.
+        HTTP 202 is returned only after the measurement and its
+        outbox event have been durably committed.
+      operationId: submitMeasurement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeasurementInput"
+      responses:
+        "202":
+          description: Measurement durably accepted for asynchronous processing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeasurementAccepted"
+        "400":
+          description: Invalid measurement data
+        "409":
+          description: Measurement ID already exists
+        "503":
+          description: Service or durable storage unavailable
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - service
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+          example: ingestion-service
+
+    MeasurementInput:
+      type: object
+      required:
+        - measurementId
+        - sensorId
+        - timestamp
+        - pm25
+        - pm10
+      properties:
+        measurementId:
+          type: string
+          format: uuid
+          description: Globally unique measurement identifier.
+        sensorId:
+          type: string
+          example: MIT-SENSOR-001
+        timestamp:
+          type: string
+          format: date-time
+          description: Time when the sensor captured the measurement.
+        pm25:
+          type: number
+          minimum: 0
+          description: PM2.5 concentration in micrograms per cubic meter.
+          example: 18.5
+        pm10:
+          type: number
+          minimum: 0
+          description: PM10 concentration in micrograms per cubic meter.
+          example: 32.7
+
+    MeasurementAccepted:
+      type: object
+      required:
+        - measurementId
+        - status
+      properties:
+        measurementId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          example: accepted
+        message:
+          type: string
+          example: Measurement accepted for processing.

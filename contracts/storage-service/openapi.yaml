@@ -1,0 +1,210 @@
+﻿openapi: 3.1.0
+
+info:
+  title: Storage Service API
+  version: 1.0.0
+  description: >
+    API for querying air quality measurements and time-series
+    aggregates stored by the Storage Service.
+
+servers:
+  - url: http://localhost:3102
+    description: Local development server
+
+tags:
+  - name: Health
+  - name: Measurements
+  - name: Aggregates
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Check service health
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /v1/measurements:
+    get:
+      tags:
+        - Measurements
+      summary: Retrieve air quality measurements
+      parameters:
+        - name: sensorId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter measurements by sensor ID.
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: Start of the requested time range.
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: End of the requested time range.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+      responses:
+        "200":
+          description: Measurements retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - count
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Measurement"
+                  count:
+                    type: integer
+        "400":
+          description: Invalid query parameters
+        "503":
+          description: Storage database unavailable
+
+  /v1/measurements/aggregates:
+    get:
+      tags:
+        - Aggregates
+      summary: Retrieve aggregated air quality measurements
+      description: >
+        Returns time-bucketed measurements.
+        The initial supported aggregation interval is one minute.
+      parameters:
+        - name: sensorId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: interval
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - 1m
+            default: 1m
+      responses:
+        "200":
+          description: Aggregated measurements retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MeasurementAggregate"
+        "400":
+          description: Invalid query parameters
+        "503":
+          description: Storage database unavailable
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - service
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+          example: storage-service
+
+    Measurement:
+      type: object
+      required:
+        - measurementId
+        - sensorId
+        - timestamp
+        - pm25
+        - pm10
+      properties:
+        measurementId:
+          type: string
+          format: uuid
+        sensorId:
+          type: string
+          example: MIT-SENSOR-001
+        timestamp:
+          type: string
+          format: date-time
+        pm25:
+          type: number
+          minimum: 0
+          example: 18.5
+        pm10:
+          type: number
+          minimum: 0
+          example: 32.7
+
+    MeasurementAggregate:
+      type: object
+      required:
+        - sensorId
+        - intervalStart
+        - pm25Average
+        - pm10Average
+        - measurementCount
+      properties:
+        sensorId:
+          type: string
+          example: MIT-SENSOR-001
+        intervalStart:
+          type: string
+          format: date-time
+        pm25Average:
+          type: number
+          minimum: 0
+          example: 17.8
+        pm10Average:
+          type: number
+          minimum: 0
+          example: 30.2
+        measurementCount:
+          type: integer
+          minimum: 1
+          example: 12
