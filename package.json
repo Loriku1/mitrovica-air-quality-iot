@@ -1,0 +1,36 @@
+{
+  "name": "mitrovica-air-quality-iot",
+  "version": "1.0.0",
+  "description": "IoT-based real-time air quality monitoring and pollution alert system for Mitrovica.",
+  "type": "module",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+  "dev:ingestion": "tsx watch services/ingestion-service/src/index.ts",
+  "dev:storage": "tsx watch services/storage-service/src/index.ts",
+  "dev:alert": "tsx watch services/alert-service/src/index.ts",
+  "typecheck": "tsc --noEmit"
+},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Loriku1/mitrovica-air-quality-iot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Loriku1/mitrovica-air-quality-iot/issues"
+  },
+  "homepage": "https://github.com/Loriku1/mitrovica-air-quality-iot#readme",
+  "dependencies": {
+    "express": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
