@@ -1,16 +1,13 @@
+@'
 # Mitrovica Air Quality – IoT Platform
 
-An IoT-based air quality monitoring platform designed to monitor
-PM2.5 and PM10 pollution levels across Mitrovica, Kosovo.
+An IoT-based air quality monitoring platform designed to monitor PM2.5 and PM10 pollution levels across Mitrovica, Kosovo.
 
 ## 1. Project Overview
 
-The platform collects air quality measurements from IoT sensors,
-processes incoming data, stores historical measurements and
-generates alerts when pollution thresholds are exceeded.
+The platform collects air quality measurements from IoT sensors, processes incoming data, stores historical measurements and generates alerts when pollution thresholds are exceeded.
 
-The system is designed to support 1,000 sensors sending
-measurements every 5 seconds.
+The system is designed to support 1,000 sensors sending measurements every 5 seconds.
 
 ## 2. Main Challenge
 
@@ -25,15 +22,13 @@ The system must handle:
 
 ## 3. Microservices Architecture
 
-The system consists of three core microservices.
-
 | Service | Port | Responsibility |
 |---|---:|---|
-| Ingestion Service | 3101 | Receives and validates sensor measurements |
-| Storage Service | 3102 | Owns and stores historical air quality measurements |
-| Alert Service | 3103 | Evaluates pollution thresholds and generates alerts |
+| ingestion-service | 3101 | Receives and validates sensor measurements |
+| storage-service | 3102 | Stores historical air quality measurements |
+| alert-service | 3103 | Evaluates pollution thresholds and generates alerts |
 
-Each microservice is designed with independent data ownership.
+Each microservice has independent data ownership.
 
 ## 4. Data Retention
 
@@ -42,26 +37,58 @@ Each microservice is designed with independent data ownership.
 
 ## 5. Technology Stack
 
-- Node.js
+- Node.js 22
 - TypeScript
 - Express.js
-- PostgreSQL / TimescaleDB
-- RabbitMQ
+- PostgreSQL / TimescaleDB (planned)
+- RabbitMQ (planned)
 - Docker
-- Kubernetes
-- Prometheus
-- Grafana
-- OpenTelemetry
+- Kubernetes (planned)
+- Prometheus and Grafana (planned)
+- OpenTelemetry (planned)
 
-## 6. Getting Started
+## 6. Nisja
 
 ### Requirements
 
 - Node.js 22+
 - npm
-- Docker Desktop (for future infrastructure components)
 
 ### Installation
 
-```bash
-npm install
+Install project dependencies:
+
+    npm install
+
+### Start all three microservices
+
+    npm run dev:all
+
+### Health endpoints
+
+- Ingestion: http://localhost:3101/health
+- Storage: http://localhost:3102/health
+- Alert: http://localhost:3103/health
+
+### Type checking
+
+    npm run typecheck
+
+## 7. Current Implementation Status
+
+Currently implemented:
+
+- Three runnable Express and TypeScript service skeletons.
+- Independent HTTP health endpoints.
+- OpenAPI contracts for all three services.
+- C4 architecture documentation.
+- SLO definitions and ADR documentation.
+
+Planned for subsequent development:
+
+- RabbitMQ event processing.
+- PostgreSQL and TimescaleDB persistence.
+- Transactional outbox and idempotent consumers.
+- Kubernetes deployment.
+- Prometheus, Grafana and OpenTelemetry monitoring.
+'@ | Set-Content README.md -Encoding utf8

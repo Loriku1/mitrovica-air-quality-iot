@@ -169,3 +169,14 @@ The system uses synchronous and asynchronous communication.
 - Alert Service consumes events for threshold evaluation.
 
 Both consumers process events
+## 9. Service Directory Mapping
+
+The implementation uses the following service directories:
+
+| Service identifier | Source directory | Contract |
+|---|---|---|
+| ingestion-service | services/ingestion-service/ | contracts/ingestion-service.openapi.yaml |
+| storage-service | services/storage-service/ | contracts/storage-service.openapi.yaml |
+| alert-service | services/alert-service/ | contracts/alert-service.openapi.yaml |
+
+Each service has its own source code, Dockerfile, API contract and health endpoint.
