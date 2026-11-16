@@ -1,4 +1,4 @@
-# ADR-002: RabbitMQ and Asynchronous Communication
+# ADR-002: RabbitMQ Fanout Exchange and Asynchronous Communication
 
 ## Status
 
@@ -8,40 +8,59 @@ Accepted
 
 2026-11-13
 
+## Last Revised
+
+2026-11-16
+
 ## 1. Context
 
 The Mitrovica Air Quality IoT Platform is expected to receive approximately 200 measurement messages per second from 1,000 IoT sensors.
 
-Each incoming measurement must be processed by two independent services:
+Each incoming measurement must be processed independently by two services:
 
 - Storage Service, which persists measurements and creates aggregates.
 - Alert Service, which evaluates pollution thresholds and generates alerts.
 
 Using only synchronous HTTP communication would tightly couple the Ingestion Service to downstream services.
 
-If one downstream service becomes unavailable, ingestion could be delayed or fail.
-
 The platform therefore requires reliable asynchronous communication.
 
-## 2. Decision
+## 2. Initial Decision
 
-We will use RabbitMQ as the asynchronous message broker.
+The initial architecture decision was to use RabbitMQ for asynchronous communication.
+
+The original decision established that Storage Service and Alert Service must independently consume measurement events. However, the exact exchange type and queue topology were not explicitly defined.
+
+## 3. Revised Decision
+
+After reviewing the message distribution requirements, the RabbitMQ topology is now explicitly defined using a Fanout Exchange and two independent durable queues.
 
 The communication flow will be:
 
 1. Ingestion Service validates incoming measurements.
 2. Ingestion Service stores the measurement metadata and an event in its transactional outbox.
-3. An outbox publisher sends measurement events to RabbitMQ.
-4. Storage Service consumes events and stores measurements.
-5. Alert Service independently consumes events and evaluates pollution thresholds.
+3. An outbox publisher sends measurement events to the RabbitMQ Fanout Exchange.
+4. The Fanout Exchange routes a copy of each event to both bound queues.
+5. Storage Service consumes events from the storage.measurements queue and persists measurements.
+6. Alert Service consumes events from the alert.measurements queue and evaluates pollution thresholds.
 
-RabbitMQ will use durable queues and persistent messages.
+Both queues will be durable, and messages will be persistent.
 
 Consumers will acknowledge messages only after successful processing.
 
-Consumers will also implement idempotency to prevent duplicate processing.
+Consumers will implement idempotency to prevent duplicate processing.
 
-## 3. Alternatives Considered
+## 4. Reason for Revising the Decision
+
+Both Storage Service and Alert Service need to receive every relevant measurement independently.
+
+A shared competing-consumer queue would distribute messages among consumers rather than guarantee that both services receive each event.
+
+The Fanout Exchange provides independent message distribution by routing each published event to every bound queue.
+
+This allows Storage and Alert processing to proceed independently. A temporary outage in one consumer does not prevent the other consumer from processing its own queue.
+
+## 5. Alternatives Considered
 
 ### Synchronous HTTP Communication
 
@@ -57,6 +76,18 @@ Disadvantages:
 - Downstream failures can affect ingestion.
 - Difficult to handle temporary service outages.
 
+### RabbitMQ Direct Exchange with a Shared Queue
+
+A shared queue could distribute messages among competing consumers.
+
+Advantages:
+- Simple queue configuration.
+- Useful for distributing workload among instances of the same service.
+
+Disadvantages:
+- Does not guarantee that both independent services receive every measurement.
+- Storage and Alert require separate processing of the same event.
+
 ### Redis Streams
 
 Redis Streams could be used as an event streaming mechanism.
@@ -70,35 +101,44 @@ Disadvantages:
 - Requires additional decisions about persistence and stream management.
 - RabbitMQ provides a messaging model that better matches the current project requirements.
 
-## 4. Consequences
+## 6. Consequences
 
 Positive consequences:
 
-- Ingestion, storage, and alert processing are decoupled.
-- Storage and Alert services can consume events independently.
-- Temporary consumer outages can be handled through message queues.
+- Storage and Alert receive independent copies of measurement events.
+- Each service can process its queue independently.
+- Temporary consumer outages can be handled through durable queues.
 - Message buffering helps absorb processing spikes.
 - Consumers can be scaled independently.
 
 Negative consequences:
 
 - RabbitMQ introduces another infrastructure component.
-- Event delivery and processing require monitoring.
+- Two queues require additional configuration and monitoring.
 - Duplicate message delivery must be handled.
 - The transactional outbox pattern adds implementation complexity.
+- Message processing and queue growth must be monitored.
 
-## 5. Reliability Considerations
+## 7. Reliability Considerations
 
 The transactional outbox pattern will be used to reduce the risk of losing accepted measurements between database persistence and message publishing.
 
-RabbitMQ queues will be configured for durability and persistent messages.
+The Fanout Exchange will route events to both durable queues.
 
-Consumers will use manual acknowledgements after successful processing.
+Messages will be persistent, and consumers will use manual acknowledgements after successful processing.
 
 Idempotency keys will prevent duplicate measurements from being stored or processed more than once.
 
-## 6. Summary
+## 8. Implementation Status
 
-RabbitMQ was selected because the platform requires independent asynchronous processing of sensor measurements by Storage and Alert services.
+The Fanout Exchange topology is an architectural decision planned for implementation.
 
-The combination of RabbitMQ, transactional outbox, and idempotent consumers is intended to improve reliability and support the target ingestion workload of 200 messages per second.
+RabbitMQ, the exchange, queues, transactional outbox publisher, and consumers have not yet been implemented in the current project skeleton.
+
+## 9. Summary
+
+RabbitMQ was selected for asynchronous communication between services.
+
+The decision was subsequently refined to explicitly use a Fanout Exchange with two independent queues, ensuring that both Storage Service and Alert Service receive each measurement event.
+
+This topology supports independent processing and improves the reliability of the planned IoT data pipeline.
